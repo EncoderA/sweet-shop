@@ -3,7 +3,6 @@ import { Request, Response, NextFunction } from 'express';
 export const validateLogin = (req: Request, res: Response, next: NextFunction): void => {
   const { email, password } = req.body;
 
-  // Check if required fields are present
   if (!email || !password) {
     res.status(400).json({
       success: false,
@@ -12,7 +11,6 @@ export const validateLogin = (req: Request, res: Response, next: NextFunction): 
     return;
   }
 
-  // Validate email format
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
     res.status(400).json({
@@ -22,7 +20,6 @@ export const validateLogin = (req: Request, res: Response, next: NextFunction): 
     return;
   }
 
-  // Validate password length
   if (password.length < 6) {
     res.status(400).json({
       success: false,
@@ -37,7 +34,6 @@ export const validateLogin = (req: Request, res: Response, next: NextFunction): 
 export const validateRegister = (req: Request, res: Response, next: NextFunction): void => {
   const { name, email, password } = req.body;
 
-  // Check if required fields are present
   if (!name || !email || !password) {
     res.status(400).json({
       success: false,
@@ -46,7 +42,6 @@ export const validateRegister = (req: Request, res: Response, next: NextFunction
     return;
   }
 
-  // Validate name length
   if (name.trim().length < 2) {
     res.status(400).json({
       success: false,
@@ -54,8 +49,6 @@ export const validateRegister = (req: Request, res: Response, next: NextFunction
     });
     return;
   }
-
-  // Validate email format
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
     res.status(400).json({
@@ -65,7 +58,6 @@ export const validateRegister = (req: Request, res: Response, next: NextFunction
     return;
   }
 
-  // Validate password strength
   if (password.length < 8) {
     res.status(400).json({
       success: false,
@@ -74,7 +66,6 @@ export const validateRegister = (req: Request, res: Response, next: NextFunction
     return;
   }
 
-  // Check for at least one uppercase, one lowercase, and one number
   const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/;
   if (!passwordRegex.test(password)) {
     res.status(400).json({

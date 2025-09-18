@@ -20,7 +20,6 @@ export const login = async (req: Request<{}, {}, LoginRequest>, res: Response): 
   try {
     const { email, password } = req.body;
 
-    // Validate input
     if (!email || !password) {
       res.status(400).json({
         success: false,
@@ -29,7 +28,6 @@ export const login = async (req: Request<{}, {}, LoginRequest>, res: Response): 
       return;
     }
 
-    // Find user by email
     const userResult = await db.select().from(users).where(eq(users.email, email)).limit(1);
     
     if (userResult.length === 0) {
@@ -42,7 +40,6 @@ export const login = async (req: Request<{}, {}, LoginRequest>, res: Response): 
 
     const foundUser = userResult[0];
 
-    // Compare password
     const isPasswordValid = await bcrypt.compare(password, foundUser.passwordHash);
     
     if (!isPasswordValid) {
@@ -53,7 +50,6 @@ export const login = async (req: Request<{}, {}, LoginRequest>, res: Response): 
       return;
     }
 
-    // Generate JWT token
     const jwtSecret = process.env.JWT_SECRET || 'your-secret-key';
     const jwtExpiresIn = process.env.JWT_EXPIRES_IN || '7d';
     
@@ -94,7 +90,6 @@ export const register = async (req: Request<{}, {}, RegisterRequest>, res: Respo
   try {
     const { name, email, password } = req.body;
 
-    // Validate input
     if (!name || !email || !password) {
       res.status(400).json({
         success: false,
@@ -103,7 +98,6 @@ export const register = async (req: Request<{}, {}, RegisterRequest>, res: Respo
       return;
     }
 
-    // Check if user already exists
     const existingUser = await db.select().from(users).where(eq(users.email, email)).limit(1);
     
     if (existingUser.length > 0) {
@@ -114,11 +108,9 @@ export const register = async (req: Request<{}, {}, RegisterRequest>, res: Respo
       return;
     }
 
-    // Hash password
     const saltRounds = 12;
     const passwordHash = await bcrypt.hash(password, saltRounds);
 
-    // Create user
     const newUser = await db.insert(users).values({
       name,
       email,

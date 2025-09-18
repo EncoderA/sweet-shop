@@ -19,10 +19,12 @@ export const sweets = pgTable("sweets", {
   price: numeric("price", { precision: 10, scale: 2 }).notNull(),
   quantity: integer("quantity").notNull(),
   description: text("description"),
+  imageUrl: varchar("image_url", { length: 500 }), 
   createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
+
 
 export const purchases = pgTable("purchases", {
   id: uuid("id").defaultRandom().primaryKey(),

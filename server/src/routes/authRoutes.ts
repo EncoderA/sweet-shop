@@ -5,11 +5,9 @@ import { validateLogin, validateRegister } from '../middleware/validationMiddlew
 
 const router = Router();
 
-// Public routes
 router.post('/login', validateLogin, login);
 router.post('/register', validateRegister, register);
 
-// Protected routes
 router.get('/profile', authenticateToken, getProfile);
 
 export default router;
