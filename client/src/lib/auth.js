@@ -12,7 +12,7 @@ export const authOptions = {
       },
       async authorize(credentials) {
         try {
-          const backendUrl = process.env.BACKEND_URL || "http://localhost:3001"
+          const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001"
 
           const response = await axios.post(`${backendUrl}/api/auth/login`, {
             email: credentials?.email,
