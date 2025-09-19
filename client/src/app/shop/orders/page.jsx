@@ -23,7 +23,22 @@ const page = () => {
             session.user.id
           );
           console.log(response);
-          setOrders(response.data.purchases || []);
+          // Support both legacy purchases shape and new grouped orders shape
+          if (response?.data?.orders) {
+            setOrders(response.data.orders);
+          } else if (response?.data?.purchases) {
+            // Fallback: wrap legacy purchases as a single order
+            setOrders([
+              {
+                orderDate: new Date().toISOString(),
+                items: response.data.purchases,
+                totalAmount: response.data.purchases.reduce((s, p) => s + Number(p.priceAtPurchase) * Number(p.quantity), 0),
+                totalItems: response.data.purchases.reduce((s, p) => s + Number(p.quantity), 0)
+              }
+            ]);
+          } else {
+            setOrders([]);
+          }
         } catch (err) {
           console.error("Error fetching orders:", err);
           setError('Failed to load orders');
@@ -83,34 +98,49 @@ const page = () => {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {orders.map((order) => (
-            <Card key={order.purchaseId} className="w-full hover:shadow-lg transition-shadow">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg">{order.sweetName}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center space-x-4">
-                  {order.sweetImageUrl && (
-                    <Image 
-                      src={`${process.env.NEXT_PUBLIC_BACKEND_URL}${order.sweetImageUrl}`} 
-                      alt={order.sweetName} 
-                      width={80} 
-                      height={80} 
-                      className="w-20 h-20 object-cover rounded-lg"
-                    />
-                  )}
-                  <div className="flex-1 space-y-1">
-                    <p className="text-sm text-gray-600 font-medium">{order.sweetCategory}</p>
-                    <div className="text-sm text-gray-500 space-y-1">
-                      <p><span className="font-medium">Quantity:</span> {order.quantity}</p>
-                      <p><span className="font-medium">Price:</span> ₹{order.priceAtPurchase}</p>
-                      <p><span className="font-medium">Purchased:</span> {new Date(order.purchasedAt).toLocaleDateString()}</p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+        <div className="space-y-6">
+          {orders.map((order, idx) => (
+            <div key={idx} className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold">Order on {new Date(order.orderDate).toLocaleDateString()}</h2>
+                <div className="text-sm text-gray-600">Items: {order.totalItems} • Total: ₹{order.totalAmount}</div>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                {order.items.map((item) => {
+                  const src = item.sweetImageUrl?.startsWith('http')
+                    ? item.sweetImageUrl
+                    : `${process.env.NEXT_PUBLIC_BACKEND_URL}${item.sweetImageUrl || ''}`
+                  return (
+                    <Card key={item.purchaseId} className="w-full hover:shadow-lg transition-shadow">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-lg">{item.sweetName}</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex items-center space-x-4">
+                          {item.sweetImageUrl && (
+                            <Image 
+                              src={src}
+                              alt={item.sweetName} 
+                              width={80} 
+                              height={80} 
+                              className="w-20 h-20 object-cover rounded-lg"
+                            />
+                          )}
+                          <div className="flex-1 space-y-1">
+                            <p className="text-sm text-gray-600 font-medium">{item.sweetCategory}</p>
+                            <div className="text-sm text-gray-500 space-y-1">
+                              <p><span className="font-medium">Quantity:</span> {item.quantity}</p>
+                              <p><span className="font-medium">Price:</span> ₹{item.priceAtPurchase}</p>
+                              <p><span className="font-medium">Item total:</span> ₹{item.itemTotal}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )
+                })}
+              </div>
+            </div>
           ))}
         </div>
       )}

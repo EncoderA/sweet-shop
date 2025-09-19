@@ -122,7 +122,6 @@ const InventoryPage = () => {
 
   const openRestockModal = (sweet) => {
     setSelectedSweet(sweet);
-    setRestockQuantity("");
     setRestockModalOpen(true);
   };
 

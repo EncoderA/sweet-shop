@@ -27,7 +27,7 @@ export const OrderItem = ({ item }) => {
     <div className="flex items-center gap-2 p-2 bg-background rounded">
       {item.sweetImageUrl && (
         <Image
-          src={`${process.env.NEXT_PUBLIC_BACKEND_URL}${item.sweetImageUrl}`}
+          src={`${item.sweetImageUrl}`}
           alt={item.sweetName}
           width={32}
           height={32}

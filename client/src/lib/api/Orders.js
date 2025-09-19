@@ -1,17 +1,19 @@
-import React from 'react'
-import axios from 'axios'
+import { sweetApi } from '@/lib/api/sweetApi'
 
+// Prefer the consolidated API client to ensure consistent base URL and headers
 export const getMyOrders = async (token, userId) => {
     try {
-        const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/sweets/user/${userId}`, {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        return response.data;
+        // Use the existing endpoint for user order history if available
+        const data = await sweetApi.getUserOrderHistory(userId, token)
+        return data
     } catch (error) {
-        console.error("Error fetching user orders");
-        throw error;
+        // Fallback to legacy purchases endpoint if order history fails
+        try {
+            const data = await sweetApi.getUserPurchases(userId, token)
+            return data
+        } catch (innerError) {
+            console.error('Error fetching user orders:', innerError?.response?.data || innerError?.message || innerError)
+            throw innerError
+        }
     }
 }

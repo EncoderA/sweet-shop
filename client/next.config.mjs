@@ -15,6 +15,10 @@ const nextConfig = {
         hostname: "sweet-shop-backend-eight.vercel.app"
       },
       {
+        protocol: "https",
+        hostname: "res.cloudinary.com"
+      },
+      {
         protocol: "http", 
         hostname: "localhost",
         port: "3001",

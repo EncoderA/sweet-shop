@@ -2,24 +2,11 @@ import { Request, Response } from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import { v2 as cloudinary } from 'cloudinary';
 import { ensureDirectoryExists, resolveUploadsImagesDir } from '../utils/fileUtils';
 
-// Configure multer for disk storage to persist files under uploads/images
-const imagesDir = resolveUploadsImagesDir(__dirname);
-ensureDirectoryExists(imagesDir);
-
-const storage = multer.diskStorage({
-    destination: (_req, _file, cb) => {
-        cb(null, imagesDir);
-    },
-    filename: (_req, file, cb) => {
-        const timestamp = Date.now();
-        const randomSuffix = Math.round(Math.random() * 1e9);
-        const ext = path.extname(file.originalname).toLowerCase();
-        const base = path.basename(file.originalname, ext).replace(/[^a-z0-9_-]/gi, '_');
-        cb(null, `${base}-${timestamp}-${randomSuffix}${ext}`);
-    }
-});
+// Configure multer for memory storage when using Cloudinary
+const storage = multer.memoryStorage();
 
 // File filter for images only
 const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
@@ -55,20 +42,43 @@ export const uploadImage = async (req: Request, res: Response) => {
             return;
         }
 
-        const file = req.file as Express.Multer.File & { filename: string; path: string };
+        // Configure Cloudinary from env
+        cloudinary.config({
+            cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+            api_key: process.env.CLOUDINARY_API_KEY,
+            api_secret: process.env.CLOUDINARY_API_SECRET,
+            secure: true
+        });
 
-        // Build public URL path served by Express static middleware
-        const publicPath = `/uploads/images/${file.filename}`;
+        const file = req.file as Express.Multer.File;
+        const buffer = file.buffer;
+
+        // Upload to Cloudinary using upload_stream
+        const uploadResult: any = await new Promise((resolve, reject) => {
+            const stream = cloudinary.uploader.upload_stream(
+                {
+                    folder: process.env.CLOUDINARY_FOLDER || 'sweet-shop/images',
+                    resource_type: 'image',
+                    overwrite: false,
+                    unique_filename: true
+                },
+                (error, result) => {
+                    if (error) return reject(error);
+                    resolve(result);
+                }
+            );
+            stream.end(buffer);
+        });
 
         res.status(200).json({
             success: true,
             message: 'Image uploaded successfully',
             data: {
-                filename: file.filename,
+                filename: uploadResult.public_id,
                 originalName: file.originalname,
                 mimetype: file.mimetype,
                 size: file.size,
-                url: publicPath
+                url: uploadResult.secure_url
             }
         });
 
@@ -96,14 +106,36 @@ export const uploadMultipleImages = async (req: Request, res: Response) => {
             return;
         }
 
+        // Configure Cloudinary from env
+        cloudinary.config({
+            cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+            api_key: process.env.CLOUDINARY_API_KEY,
+            api_secret: process.env.CLOUDINARY_API_SECRET,
+            secure: true
+        });
+
         const files = req.files as Express.Multer.File[];
-        const uploadedFiles = files.map((file) => ({
-            filename: (file as any).filename,
-            originalName: file.originalname,
-            mimetype: file.mimetype,
-            size: file.size,
-            url: `/uploads/images/${(file as any).filename}`
-        }));
+        const uploadedFiles = await Promise.all(files.map(file => new Promise((resolve, reject) => {
+            const stream = cloudinary.uploader.upload_stream(
+                {
+                    folder: process.env.CLOUDINARY_FOLDER || 'sweet-shop/images',
+                    resource_type: 'image',
+                    overwrite: false,
+                    unique_filename: true
+                },
+                (error, result) => {
+                    if (error) return reject(error);
+                    resolve({
+                        filename: (result as any).public_id,
+                        originalName: file.originalname,
+                        mimetype: file.mimetype,
+                        size: file.size,
+                        url: (result as any).secure_url
+                    });
+                }
+            );
+            stream.end(file.buffer);
+        })));
 
         res.status(200).json({
             success: true,

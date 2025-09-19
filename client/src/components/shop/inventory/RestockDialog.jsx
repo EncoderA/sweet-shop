@@ -25,7 +25,10 @@ const RestockDialog = ({ open, setOpen, selectedItem, setSweets }) => {
     try {
       const response = await sweetApi.restockSweet(
         selectedItem.id,
-        qty,
+        { 
+          quantity: qty,
+          adminId: session.user.id 
+        },
         session.user.token
       )
 
