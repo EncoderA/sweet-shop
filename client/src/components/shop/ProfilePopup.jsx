@@ -43,10 +43,10 @@ const ProfilePopup = () => {
             </DropdownMenuLabel>
            
             <DropdownMenuSeparator />
-             <DropdownMenuItem>
+             {/* <DropdownMenuItem>
                 Orders
               </DropdownMenuItem>
-            <DropdownMenuSeparator />
+            <DropdownMenuSeparator /> */}
             <DropdownMenuItem onClick={()=>signOut()}>
               <LogOut />
               Log out

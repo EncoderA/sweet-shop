@@ -2,6 +2,8 @@ import { Geist, Geist_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { SessionProvider } from "@/components/providers";
 import { Toaster } from "sonner";
+import { Suspense } from "react";
+import Loading from "./loading";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,14 +33,16 @@ export default function RootLayout({ children }) {
         className={`${geistSans.variable} ${geistMono.variable} ${plusJakartaSans.variable} antialiased`}
         style={{ fontFamily: 'var(--font-plus-jakarta-sans), var(--font-geist-sans), sans-serif' }}
       >
-        <SessionProvider>
-          {children}
-          <Toaster 
-            position="top-right"
-            richColors
+        <Suspense fallback={<Loading />}>
+          <SessionProvider>
+            {children}
+            <Toaster
+              position="top-center"
+              richColors
             // closeButton
-          />
-        </SessionProvider>
+            />
+          </SessionProvider>
+        </Suspense>
       </body>
     </html>
   );

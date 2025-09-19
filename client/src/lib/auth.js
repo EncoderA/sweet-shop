@@ -26,7 +26,8 @@ export const authOptions = {
               id: data.data.user.id || data.data.user._id,
               email: data.data.user.email,
               name: data.data.user.name,
-              role: data.data.user.role, // Include role from backend response
+              role: data.data.user.role,
+              token: data.data.token, // Store the JWT token from backend
             }
           }
 
@@ -43,6 +44,7 @@ export const authOptions = {
       if (user) {
         token.id = user.id
         token.role = user.role
+        token.accessToken = user.token // Store the JWT token in the token
       }
       return token
     },
@@ -50,6 +52,7 @@ export const authOptions = {
       if (token) {
         session.user.id = token.id
         session.user.role = token.role
+        session.user.token = token.accessToken // Add token to session
       }
       return session
     },
