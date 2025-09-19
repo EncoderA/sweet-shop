@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { sweetApi } from "@/lib/api/sweetApi";
-import { Loader2 } from "lucide-react";
+import { Loader2, Filter, X } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -44,6 +44,9 @@ const CustomersPage = () => {
   const [sortBy, setSortBy] = useState("totalSpent");
   const [filterBy, setFilterBy] = useState("all");
   const [selectedPeriod, setSelectedPeriod] = useState("all");
+  
+  // Mobile sidebar state
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Check if user is admin
   const isAdmin = session?.user?.role === "admin";
@@ -106,6 +109,9 @@ const CustomersPage = () => {
   const handleSortChange = (sort) => setSortBy(sort);
   const handleClearSearch = () => setSearchQuery("");
 
+  // Close sidebar when clicking outside on mobile
+  const closeSidebar = () => setSidebarOpen(false);
+
   if (status === "loading") {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -116,8 +122,8 @@ const CustomersPage = () => {
 
   if (!session || !isAdmin) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Card className="w-96">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
           <CardHeader>
             <CardTitle className="text-center">Access Denied</CardTitle>
             <CardDescription className="text-center">
@@ -131,9 +137,35 @@ const CustomersPage = () => {
 
   return (
     <div className="min-h-full bg-background">
-      <div className="flex">
+      <div className="flex relative">
+        {/* Mobile Sidebar Overlay */}
+        {sidebarOpen && (
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+            onClick={closeSidebar}
+          />
+        )}
+
         {/* Sidebar */}
-        <div className="w-80 h-[calc(100vh-70px)] overflow-y-auto bg-card border-r border-border p-6 space-y-6">
+        <div className={`
+          fixed lg:relative top-0 left-0 z-50 lg:z-auto
+          w-80 h-[100vh] lg:h-[calc(100vh-70px)]
+          overflow-y-auto bg-card border-r border-border
+          p-4 lg:p-6 space-y-4 lg:space-y-6
+          transform transition-transform duration-300 ease-in-out
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        `}>
+          {/* Mobile Close Button */}
+          <div className="flex justify-between items-center lg:hidden mb-4">
+            <h3 className="text-lg font-semibold">Filters & Analytics</h3>
+            <button
+              onClick={closeSidebar}
+              className="p-2 hover:bg-muted rounded-lg"
+            >
+              <X size={20} />
+            </button>
+          </div>
+
           {/* Quick Analytics */}
           <QuickAnalytics analytics={analytics} />
 
@@ -163,20 +195,33 @@ const CustomersPage = () => {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 h-[calc(100vh-70px)] overflow-y-auto p-8">
+        <div className="flex-1 w-full lg:w-auto h-[calc(100vh-70px)] overflow-y-auto p-4 lg:p-8">
+          {/* Mobile Filter Button */}
+          <div className="lg:hidden mb-4">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+            >
+              <Filter size={16} />
+              Filters & Analytics
+            </button>
+          </div>
+
           {/* Header */}
-          <div className="flex flex-col gap-6 mb-8">
+          <div className="flex flex-col gap-4 lg:gap-6 mb-6 lg:mb-8">
             <CustomerAnalyticsHeader
               customersCount={processedCustomers.length}
               searchQuery={searchQuery}
               onRefresh={fetchAllOrders}
             />
 
-            {/* Summary Cards */}
-            <CustomerSummaryCards 
-              customers={processedCustomers} 
-              analytics={analytics} 
-            />
+            {/* Summary Cards - Make them responsive */}
+            <div className="w-full">
+              <CustomerSummaryCards 
+                customers={processedCustomers} 
+                analytics={analytics} 
+              />
+            </div>
 
             {/* Search */}
             <CustomerSearchInput
@@ -187,7 +232,7 @@ const CustomersPage = () => {
           </div>
 
           {/* Customer List */}
-          <div className="space-y-6">
+          <div className="space-y-4 lg:space-y-6">
             {loading ? (
               <div className="flex justify-center py-12">
                 <Loader2 className="animate-spin h-8 w-8" />

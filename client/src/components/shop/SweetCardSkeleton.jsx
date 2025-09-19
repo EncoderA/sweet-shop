@@ -3,7 +3,7 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card";
 
 export function SweetCardSkeleton() {
   return (
-    <Card className="h-full flex flex-col overflow-hidden bg-slate-200 animate-pulse border-0 shadow-sm">
+    <Card className="h-full flex flex-col overflow-hidden border-1 animate-pulse shadow-sm">
       {/* Image Section Skeleton */}
       <div className="relative aspect-[4/3] overflow-hidden bg-gray-50">
         <Skeleton className="h-full w-full" />

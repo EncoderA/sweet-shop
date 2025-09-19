@@ -571,7 +571,6 @@ export const getUserPurchases = async (req: Request, res: Response): Promise<voi
 
 export const getAllUserOrders = async (req: Request, res: Response): Promise<void> => {
     try {
-        // Get all user purchases with sweet details
         const allUserPurchases = await db
             .select({
                 purchaseId: purchases.id,
@@ -585,7 +584,6 @@ export const getAllUserOrders = async (req: Request, res: Response): Promise<voi
                 sweetPrice: sweets.price,
                 sweetImageUrl: sweets.imageUrl,
                 sweetDescription: sweets.description,
-                // Join user details
                 userName: users.name,
                 userEmail: users.email
             })
@@ -594,7 +592,6 @@ export const getAllUserOrders = async (req: Request, res: Response): Promise<voi
             .innerJoin(users, eq(purchases.userId, users.id))
             .orderBy(sql`${purchases.purchasedAt} DESC`);
 
-        // Group purchases by user and date to create "orders"
         const ordersMap = new Map();
         
         allUserPurchases.forEach(purchase => {
@@ -632,12 +629,10 @@ export const getAllUserOrders = async (req: Request, res: Response): Promise<voi
             order.totalItems += Number(purchase.quantity);
         });
 
-        // Convert map to array and sort by date (newest first)
         const orders = Array.from(ordersMap.values()).sort((a, b) => 
             new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime()
         );
 
-        // Calculate summary statistics
         const totalOrders = orders.length;
         const totalRevenue = orders.reduce((sum, order) => sum + order.totalAmount, 0);
         const totalItemsSold = orders.reduce((sum, order) => sum + order.totalItems, 0);
@@ -678,7 +673,6 @@ export const getUserOrderHistory = async (req: Request, res: Response): Promise<
             return;
         }
         
-        // Get user purchases with sweet details
         const userPurchases = await db
             .select({
                 purchaseId: purchases.id,
@@ -697,7 +691,6 @@ export const getUserOrderHistory = async (req: Request, res: Response): Promise<
             .where(eq(purchases.userId, userId))
             .orderBy(sql`${purchases.purchasedAt} DESC`);
 
-        // Group purchases by date to create "orders"
         const ordersMap = new Map();
         
         userPurchases.forEach(purchase => {
@@ -730,7 +723,6 @@ export const getUserOrderHistory = async (req: Request, res: Response): Promise<
             order.totalItems += Number(purchase.quantity);
         });
 
-        // Convert map to array and sort by date (newest first)
         const orders = Array.from(ordersMap.values()).sort((a, b) => 
             new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime()
         );

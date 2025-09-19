@@ -16,6 +16,7 @@ import {
 import { useSession, signOut } from "next-auth/react";
 import ProfilePopup from "./ProfilePopup";
 import CartButton from "./CartButton";
+import { AnimatedThemeToggler } from "../ui/theme-toggle";
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -85,6 +86,7 @@ export default function Header() {
       </nav>
 
       <div className="hidden md:flex items-center gap-4">
+        <AnimatedThemeToggler />
         <CartButton />
         {session && <ProfilePopup />}
       </div>
@@ -168,7 +170,7 @@ export default function Header() {
             </div>
             Cart ({totalItems})
           </Link>
-
+          <AnimatedThemeToggler />
           {/* Mobile Logout */}
           {session && <ProfilePopup />}
         </motion.div>

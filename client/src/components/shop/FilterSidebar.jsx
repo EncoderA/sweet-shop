@@ -190,7 +190,7 @@ const FilterSidebar = ({
           {/* Apply/Confirm Buttons - Always Visible */}
           <div className="mt-2 space-y-2 flex-shrink-0">
             {hasUnappliedChanges() && (
-              <div className="p-2 bg-blue-50 border border-blue-200 rounded text-center">
+              <div className="p-2 border border-blue-200 rounded text-center">
                 <p className="text-xs text-blue-600 mb-2">Unsaved changes</p>
                 <div className="flex gap-2">
                   <Button

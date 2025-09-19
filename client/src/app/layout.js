@@ -4,6 +4,7 @@ import { SessionProvider } from "@/components/providers";
 import { Toaster } from "sonner";
 import { Suspense } from "react";
 import Loading from "./loading";
+import { ThemeProvider } from "next-themes";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,16 +34,23 @@ export default function RootLayout({ children }) {
         className={`${geistSans.variable} ${geistMono.variable} ${plusJakartaSans.variable} antialiased`}
         style={{ fontFamily: 'var(--font-plus-jakarta-sans), var(--font-geist-sans), sans-serif' }}
       >
-        <Suspense fallback={<Loading />}>
-          <SessionProvider>
-            {children}
-            <Toaster
-              position="top-center"
-              richColors
-            // closeButton
-            />
-          </SessionProvider>
-        </Suspense>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="light"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <Suspense fallback={<Loading />}>
+            <SessionProvider>
+              {children}
+              <Toaster
+                position="top-center"
+                richColors
+              // closeButton
+              />
+            </SessionProvider>
+          </Suspense>
+        </ThemeProvider>
       </body>
     </html>
   );

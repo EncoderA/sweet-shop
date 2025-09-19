@@ -66,7 +66,7 @@ const SweetCard = ({
       className="w-full max-w-sm mx-auto"
     >
       {/* Custom Card */}
-      <div className="bg-white rounded-xl shadow-sm hover:shadow-lg border border-gray-100 overflow-hidden transition-all duration-300 group h-full flex flex-col">
+      <div className="rounded-xl shadow-sm hover:shadow-lg border border-gray-100 overflow-hidden transition-all duration-300 group h-full flex flex-col">
         
         {/* Image Section */}
         <div className="relative h-48 w-full overflow-hidden bg-gray-50">
@@ -128,12 +128,12 @@ const SweetCard = ({
         <div className="p-4 flex-1 flex flex-col">
           {/* Title and Description */}
           <div className="mb-3">
-            <h3 className="font-semibold text-lg text-gray-900 mb-1 line-clamp-1" title={sweet.name}>
+            <h3 className="font-semibold text-lg text-foreground mb-1 line-clamp-1" title={sweet.name}>
               {sweet.name}
             </h3>
             
             {sweet.description && (
-              <p className="text-gray-600 text-sm line-clamp-2" title={sweet.description}>
+              <p className="text-forground-muted text-sm line-clamp-2" title={sweet.description}>
                 {sweet.description}
               </p>
             )}

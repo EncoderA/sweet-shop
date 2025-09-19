@@ -94,25 +94,20 @@ const ShopPage = () => {
     }
   }, [appliedFilters, debouncedSearchQuery, status]);
 
-  // Initial fetch - wait for session to load
   useEffect(() => {
     if (status !== "loading") {
       fetchSweets();
     }
   }, [fetchSweets, status]);
 
-  // Handle filter confirmation from sidebar
   const handleFiltersApply = useCallback((newFilters) => {
     setAppliedFilters(newFilters);
   }, []);
 
-  // Handle search (no longer needed for immediate search due to debouncing)
   const handleSearch = (e) => {
     e.preventDefault();
-    // Search is now handled automatically by debouncing
   };
 
-  // Handle add to cart
   const handleAddToCart = async (sweet, quantity) => {
     return await addToCart(sweet, quantity);
   };

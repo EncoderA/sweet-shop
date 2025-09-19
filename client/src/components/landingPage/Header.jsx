@@ -5,18 +5,23 @@ import Link from "next/link";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
 import { useSession } from "next-auth/react";
+import { AnimatedThemeToggler } from "../ui/theme-toggle";
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const {data: session} = useSession();
-  console.log(session)
+  const { data: session } = useSession();
+  console.log(session);
   return (
     <header className="flex sticky top-0 z-50 items-center justify-between whitespace-nowrap border-b border-border px-6 py-4 bg-background/95 backdrop-blur-sm">
       {/* Logo */}
       <div className="flex items-center gap-3 text-foreground">
         <div className="w-8 h-8" style={{ color: "#ee2b8c" }}>
-          <svg fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+          <svg
+            fill="none"
+            viewBox="0 0 48 48"
+            xmlns="http://www.w3.org/2000/svg"
+          >
             <path
               clipRule="evenodd"
               d="M24 4H42V17.3333V30.6667H24V44H6V30.6667V17.3333H24V4Z"
@@ -44,11 +49,18 @@ export default function Header() {
 
       {/* Auth Buttons - Desktop */}
       <div className="hidden md:flex items-center gap-2">
+        <AnimatedThemeToggler />
         <Link href="/login" passHref>
           <motion.button
             className="flex min-w-[90px] items-center justify-center rounded-lg h-10 px-4 text-sm font-bold transition-colors"
-            style={{ backgroundColor: "rgba(238, 43, 140, 0.1)", color: "#ee2b8c" }}
-            whileHover={{ scale: 1.05, backgroundColor: "rgba(238, 43, 140, 0.2)" }}
+            style={{
+              backgroundColor: "rgba(238, 43, 140, 0.1)",
+              color: "#ee2b8c",
+            }}
+            whileHover={{
+              scale: 1.05,
+              backgroundColor: "rgba(238, 43, 140, 0.2)",
+            }}
             whileTap={{ scale: 0.95 }}
             transition={{ duration: 0.5 }}
           >
@@ -60,7 +72,10 @@ export default function Header() {
           <motion.button
             className="flex min-w-[90px] items-center justify-center rounded-lg h-10 px-4 text-white text-sm font-bold transition-colors"
             style={{ backgroundColor: "#ee2b8c" }}
-            whileHover={{ scale: 1.05, backgroundColor: "rgba(238, 43, 140, 0.9)" }}
+            whileHover={{
+              scale: 1.05,
+              backgroundColor: "rgba(238, 43, 140, 0.9)",
+            }}
             whileTap={{ scale: 0.95 }}
             transition={{ duration: 0.5, delay: 0.1 }}
           >
@@ -70,13 +85,15 @@ export default function Header() {
       </div>
 
       {/* Mobile Menu Button */}
-      <button
-        className="md:hidden text-foreground"
-        onClick={() => setMenuOpen(!menuOpen)}
-      >
-        {menuOpen ? <X size={28} /> : <Menu size={28} />}
-      </button>
-
+      <div className="flex items-center gap-3">
+        <AnimatedThemeToggler className={"md:hidden"} />
+        <button
+          className="md:hidden text-foreground"
+          onClick={() => setMenuOpen(!menuOpen)}
+        >
+          {menuOpen ? <X size={28} /> : <Menu size={28} />}
+        </button>
+      </div>
       {/* Mobile Menu */}
       {menuOpen && (
         <motion.div
@@ -100,8 +117,14 @@ export default function Header() {
             <Link href="/login" passHref>
               <motion.button
                 className="w-full rounded-lg h-10 px-4 text-sm font-bold transition-colors"
-                style={{ backgroundColor: "rgba(238, 43, 140, 0.1)", color: "#ee2b8c" }}
-                whileHover={{ scale: 1.05, backgroundColor: "rgba(238, 43, 140, 0.2)" }}
+                style={{
+                  backgroundColor: "rgba(238, 43, 140, 0.1)",
+                  color: "#ee2b8c",
+                }}
+                whileHover={{
+                  scale: 1.05,
+                  backgroundColor: "rgba(238, 43, 140, 0.2)",
+                }}
                 whileTap={{ scale: 0.95 }}
               >
                 Login
@@ -111,7 +134,10 @@ export default function Header() {
               <motion.button
                 className="w-full rounded-lg h-10 px-4 text-white text-sm font-bold transition-colors"
                 style={{ backgroundColor: "#ee2b8c" }}
-                whileHover={{ scale: 1.05, backgroundColor: "rgba(238, 43, 140, 0.9)" }}
+                whileHover={{
+                  scale: 1.05,
+                  backgroundColor: "rgba(238, 43, 140, 0.9)",
+                }}
                 whileTap={{ scale: 0.95 }}
               >
                 Sign Up
