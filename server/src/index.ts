@@ -5,14 +5,12 @@ import { drizzle } from 'drizzle-orm/node-postgres';
 import authRoutes from './routes/authRoutes';
 import sweetRoutes from './routes/sweetRoutes';
 import uploadRoutes from './routes/uploadRoutes';
+import path from 'path';
 
 const app = express();
 
-// Configure CORS for production
 const corsOptions = {
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://sweet-shop-incubyte.vercel.app', 'https://sweet-shop-backend-eight.vercel.app']
-    : ['http://localhost:3000', 'http://localhost:3001'],
+  origin: true, // Allow all origins
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-csrf-token'],
@@ -30,6 +28,9 @@ app.get('/', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/sweets', sweetRoutes);
 app.use('/api/upload', uploadRoutes);
+
+// Serve static uploads directory (images)
+app.use('/uploads', express.static(path.resolve(__dirname, '..', 'uploads')));
 
 // For local development only
 if (process.env.NODE_ENV === 'development') {

@@ -97,11 +97,14 @@ const AddItemDialog = ({ open, setOpen, setSweets }) => {
       }
 
       // Create the sweet
+      // Avoid sending large data URLs which exceed DB column limits in production
+      const safeImageUrl = imageUrl && imageUrl.startsWith('data:') ? null : imageUrl
+
       const sweetData = {
         ...newItem,
         price: parseFloat(newItem.price),
         quantity: parseInt(newItem.quantity),
-        imageUrl,
+        imageUrl: safeImageUrl,
         createdBy: session.user.id
       }
 

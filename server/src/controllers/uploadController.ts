@@ -1,9 +1,25 @@
 import { Request, Response } from 'express';
 import multer from 'multer';
 import path from 'path';
+import fs from 'fs';
+import { ensureDirectoryExists, resolveUploadsImagesDir } from '../utils/fileUtils';
 
-// Configure multer for memory storage (serverless compatible)
-const storage = multer.memoryStorage();
+// Configure multer for disk storage to persist files under uploads/images
+const imagesDir = resolveUploadsImagesDir(__dirname);
+ensureDirectoryExists(imagesDir);
+
+const storage = multer.diskStorage({
+    destination: (_req, _file, cb) => {
+        cb(null, imagesDir);
+    },
+    filename: (_req, file, cb) => {
+        const timestamp = Date.now();
+        const randomSuffix = Math.round(Math.random() * 1e9);
+        const ext = path.extname(file.originalname).toLowerCase();
+        const base = path.basename(file.originalname, ext).replace(/[^a-z0-9_-]/gi, '_');
+        cb(null, `${base}-${timestamp}-${randomSuffix}${ext}`);
+    }
+});
 
 // File filter for images only
 const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
@@ -39,28 +55,20 @@ export const uploadImage = async (req: Request, res: Response) => {
             return;
         }
 
-        // Get the file information
-        const file = req.file;
-        const timestamp = Date.now();
-        const randomSuffix = Math.round(Math.random() * 1E9);
-        const fileExtension = path.extname(file.originalname);
-        const filename = `image-${timestamp}-${randomSuffix}${fileExtension}`;
+        const file = req.file as Express.Multer.File & { filename: string; path: string };
 
-        // In a real deployment, you would upload to cloud storage here
-        // For now, we'll return the base64 data URL (not recommended for production)
-        const base64Data = file.buffer.toString('base64');
-        const dataUrl = `data:${file.mimetype};base64,${base64Data}`;
+        // Build public URL path served by Express static middleware
+        const publicPath = `/uploads/images/${file.filename}`;
 
         res.status(200).json({
             success: true,
             message: 'Image uploaded successfully',
             data: {
-                filename,
+                filename: file.filename,
                 originalName: file.originalname,
                 mimetype: file.mimetype,
                 size: file.size,
-                url: dataUrl, // In production, this would be the cloud storage URL
-                note: 'This is a temporary solution. Implement cloud storage for production.'
+                url: publicPath
             }
         });
 
@@ -89,25 +97,13 @@ export const uploadMultipleImages = async (req: Request, res: Response) => {
         }
 
         const files = req.files as Express.Multer.File[];
-        const uploadedFiles = files.map(file => {
-            const timestamp = Date.now();
-            const randomSuffix = Math.round(Math.random() * 1E9);
-            const fileExtension = path.extname(file.originalname);
-            const filename = `image-${timestamp}-${randomSuffix}${fileExtension}`;
-            
-            // Convert to base64 data URL (temporary solution)
-            const base64Data = file.buffer.toString('base64');
-            const dataUrl = `data:${file.mimetype};base64,${base64Data}`;
-
-            return {
-                filename,
-                originalName: file.originalname,
-                mimetype: file.mimetype,
-                size: file.size,
-                url: dataUrl,
-                note: 'This is a temporary solution. Implement cloud storage for production.'
-            };
-        });
+        const uploadedFiles = files.map((file) => ({
+            filename: (file as any).filename,
+            originalName: file.originalname,
+            mimetype: file.mimetype,
+            size: file.size,
+            url: `/uploads/images/${(file as any).filename}`
+        }));
 
         res.status(200).json({
             success: true,
