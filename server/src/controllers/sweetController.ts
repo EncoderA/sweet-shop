@@ -1,50 +1,62 @@
 import { Request, Response } from 'express';
 import { db } from '../db';
-import { sweets, purchases, restocks } from '../db/schema';
-import { eq, like, and, gte, lte } from 'drizzle-orm';
+import { sweets, purchases, restocks, users } from '../db/schema';
+import { eq, like, and, gte, lte, sql } from 'drizzle-orm';
 
 export const createSweet = async (req: Request, res: Response): Promise<void> => {
-    try {
-        const {name, description, category, price, quantity, imageUrl} = req.body;
+  try {
+    const { name, description, category, price, quantity, imageUrl, createdBy } = req.body
 
-        const createdBy = (req as any).user?.id;
+    // Extra: Check if sweet already exists before insert
+    const existing = await db.query.sweets.findFirst({
+      where: (sweet, { eq }) => eq(sweet.name, name.trim())
+    })
 
-        const newSweet = await db
-            .insert(sweets)
-            .values({
-                name, 
-                description, 
-                category,
-                price,
-                quantity: quantity || 0,
-                imageUrl,
-                createdBy,
-                createdAt: new Date(),
-                updatedAt: new Date()
-            })
-            .returning();
-
-        res.status(201).json({
-            sucess: true,
-            data: newSweet[0],
-            message: "Sweet created successfully"
-        });
-    } catch (error) {
-        console.error('Error creating sweet: ', error);
-
-        if((error as any).code === '23505') {
-            res.status(400).json({
-                success: false,
-                message: "A sweet with this name already exists"
-            });
-            return;
-        }
-        
-        res.status(500).json({
-            success: false,
-            message: 'Failed to create sweet'
-        });
+    if (existing) {
+      res.status(400).json({
+        success: false,
+        message: "A sweet with this name already exists"
+      })
+      return
     }
+
+    const newSweet = await db
+      .insert(sweets)
+      .values({
+        name: name.trim(),
+        description,
+        category,
+        price,
+        quantity: quantity || 0,
+        imageUrl,
+        createdBy,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+      .returning()
+
+    res.status(201).json({
+      success: true,
+      data: newSweet[0],
+      message: "Sweet created successfully"
+    })
+  } catch (error: any) {
+    console.error("Error creating sweet:", error)
+
+    // Duplicate entry error
+    if (error.code === "23505") {
+      res.status(400).json({
+        success: false,
+        message: "A sweet with this name already exists"
+      })
+      return
+    }
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to create sweet"
+    })
+  }
 }
 
 export const getAllSweets = async (req: Request, res: Response) => {
@@ -72,11 +84,11 @@ export const searchSweets = async (req: Request, res: Response) => {
         let whereConditions = [];
         
         if (name) {
-            whereConditions.push(like(sweets.name, `%${name}%`));
+            whereConditions.push(sql`LOWER(${sweets.name}) LIKE LOWER(${`%${name}%`})`);
         }
         
         if (category) {
-            whereConditions.push(like(sweets.category, `%${category}%`));
+            whereConditions.push(sql`LOWER(${sweets.category}) LIKE LOWER(${`%${category}%`})`);
         }
         
         if (minPrice) {
@@ -210,13 +222,20 @@ export const deleteSweet = async (req: Request, res: Response): Promise<void> =>
 export const purchaseSweet = async (req: Request, res: Response): Promise<void> => {
     try {
         const { id } = req.params;
-        const { quantity: purchaseQuantity } = req.body;
-        const userId = (req as any).user?.id;
+        const { quantity: purchaseQuantity, userId } = req.body;
         
         if (!id) {
             res.status(400).json({
                 success: false,
                 message: "Sweet ID is required"
+            });
+            return;
+        }
+        
+        if (!userId) {
+            res.status(400).json({
+                success: false,
+                message: "User ID is required"
             });
             return;
         }
@@ -287,16 +306,150 @@ export const purchaseSweet = async (req: Request, res: Response): Promise<void> 
     }
 }
 
+export const purchaseBulkSweets = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { items, userId } = req.body;
+        
+        if (!userId) {
+            res.status(400).json({
+                success: false,
+                message: "User ID is required"
+            });
+            return;
+        }
+        
+        if (!items || !Array.isArray(items) || items.length === 0) {
+            res.status(400).json({
+                success: false,
+                message: "Items array is required and must not be empty"
+            });
+            return;
+        }
+        
+        // Validate items format
+        for (const item of items) {
+            if (!item.sweetId || !item.quantity || item.quantity <= 0) {
+                res.status(400).json({
+                    success: false,
+                    message: "Each item must have sweetId and quantity > 0"
+                });
+                return;
+            }
+        }
+        
+        // Check stock availability for all items first
+        const sweetChecks = await Promise.all(
+            items.map(async (item: any) => {
+                const sweetResult = await db.select().from(sweets).where(eq(sweets.id, item.sweetId));
+                if (sweetResult.length === 0) {
+                    return { error: `Sweet with ID ${item.sweetId} not found` };
+                }
+                
+                const sweet = sweetResult[0];
+                if (sweet && sweet.quantity < item.quantity) {
+                    return { 
+                        error: `Insufficient stock for ${sweet.name}. Available: ${sweet.quantity}, Requested: ${item.quantity}` 
+                    };
+                }
+                
+                return { sweet, requestedQuantity: item.quantity };
+            })
+        );
+        
+        // Check for any errors
+        const error = sweetChecks.find(check => check.error);
+        if (error) {
+            res.status(400).json({
+                success: false,
+                message: error.error
+            });
+            return;
+        }
+        
+        // Process all purchases in a transaction-like manner
+        const purchaseResults = [];
+        const updatedSweets = [];
+        
+        for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            const sweetCheck = sweetChecks[i] as { sweet: any; requestedQuantity: number };
+            const { sweet, requestedQuantity } = sweetCheck;
+            
+            const newQuantity = sweet.quantity - requestedQuantity;
+            
+            // Update sweet quantity
+            const updatedSweet = await db
+                .update(sweets)
+                .set({
+                    quantity: newQuantity,
+                    updatedAt: new Date()
+                })
+                .where(eq(sweets.id, sweet.id))
+                .returning();
+            
+            // Record purchase
+            const purchase = await db
+                .insert(purchases)
+                .values({
+                    userId,
+                    sweetId: sweet.id,
+                    quantity: requestedQuantity,
+                    priceAtPurchase: sweet.price
+                })
+                .returning();
+            
+            purchaseResults.push(purchase[0]);
+            updatedSweets.push(updatedSweet[0]);
+        }
+        
+        const totalAmount = purchaseResults.reduce((sum, purchase) => {
+            if (purchase && purchase.priceAtPurchase && purchase.quantity) {
+                return sum + (Number(purchase.priceAtPurchase) * Number(purchase.quantity));
+            }
+            return sum;
+        }, 0);
+        
+        res.status(200).json({
+            success: true,
+            data: {
+                purchases: purchaseResults,
+                updatedSweets,
+                totalAmount,
+                totalItems: purchaseResults.reduce((sum, purchase) => {
+                    if (purchase && purchase.quantity) {
+                        return sum + purchase.quantity;
+                    }
+                    return sum;
+                }, 0)
+            },
+            message: `Successfully purchased ${purchaseResults.length} different item(s) for ₹${totalAmount}`
+        });
+    } catch (error) {
+        console.error('Error purchasing bulk sweets:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to process bulk purchase'
+        });
+    }
+}
+
 export const restockSweet = async (req: Request, res: Response): Promise<void> => {
     try {
         const { id } = req.params;
-        const { quantity: restockQuantity } = req.body;
-        const adminId = (req as any).user?.id;
+        const { quantity: restockQuantity, adminId } = req.body;
         
         if (!id) {
             res.status(400).json({
                 success: false,
                 message: "Sweet ID is required"
+            });
+            return;
+        }
+        
+        if (!adminId) {
+            res.status(400).json({
+                success: false,
+                message: "Admin ID is required"
             });
             return;
         }
@@ -353,6 +506,256 @@ export const restockSweet = async (req: Request, res: Response): Promise<void> =
         res.status(500).json({
             success: false,
             message: 'Failed to restock sweet'
+        });
+    }
+}
+
+export const getUserPurchases = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { userId } = req.params;
+        
+        if (!userId) {
+            res.status(400).json({
+                success: false,
+                message: "User ID is required"
+            });
+            return;
+        }
+        
+        const userPurchases = await db
+            .select({
+                purchaseId: purchases.id,
+                quantity: purchases.quantity,
+                priceAtPurchase: purchases.priceAtPurchase,
+                purchasedAt: purchases.purchasedAt,
+                sweetId: sweets.id,
+                sweetName: sweets.name,
+                sweetCategory: sweets.category,
+                sweetPrice: sweets.price,
+                sweetImageUrl: sweets.imageUrl,
+                sweetDescription: sweets.description
+            })
+            .from(purchases)
+            .innerJoin(sweets, eq(purchases.sweetId, sweets.id))
+            .where(eq(purchases.userId, userId))
+            .orderBy(purchases.purchasedAt);
+        
+        const totalSpent = userPurchases.reduce((sum, purchase) => {
+            return sum + (Number(purchase.priceAtPurchase) * Number(purchase.quantity));
+        }, 0);
+        
+        const totalItems = userPurchases.reduce((sum, purchase) => {
+            return sum + Number(purchase.quantity);
+        }, 0);
+        
+        res.status(200).json({
+            success: true,
+            data: {
+                purchases: userPurchases,
+                summary: {
+                    totalOrders: userPurchases.length,
+                    totalItems,
+                    totalSpent
+                }
+            },
+            message: `Found ${userPurchases.length} purchase(s) for user`
+        });
+    } catch (error) {
+        console.error('Error fetching user purchases:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch user purchases'
+        });
+    }
+}
+
+export const getAllUserOrders = async (req: Request, res: Response): Promise<void> => {
+    try {
+        // Get all user purchases with sweet details
+        const allUserPurchases = await db
+            .select({
+                purchaseId: purchases.id,
+                userId: purchases.userId,
+                quantity: purchases.quantity,
+                priceAtPurchase: purchases.priceAtPurchase,
+                purchasedAt: purchases.purchasedAt,
+                sweetId: sweets.id,
+                sweetName: sweets.name,
+                sweetCategory: sweets.category,
+                sweetPrice: sweets.price,
+                sweetImageUrl: sweets.imageUrl,
+                sweetDescription: sweets.description,
+                // Join user details
+                userName: users.name,
+                userEmail: users.email
+            })
+            .from(purchases)
+            .innerJoin(sweets, eq(purchases.sweetId, sweets.id))
+            .innerJoin(users, eq(purchases.userId, users.id))
+            .orderBy(sql`${purchases.purchasedAt} DESC`);
+
+        // Group purchases by user and date to create "orders"
+        const ordersMap = new Map();
+        
+        allUserPurchases.forEach(purchase => {
+            const orderDate = new Date(purchase.purchasedAt).toDateString();
+            const orderKey = `${purchase.userId}-${orderDate}`;
+            
+            if (!ordersMap.has(orderKey)) {
+                ordersMap.set(orderKey, {
+                    orderId: orderKey,
+                    userId: purchase.userId,
+                    userName: purchase.userName,
+                    userEmail: purchase.userEmail,
+                    orderDate: purchase.purchasedAt,
+                    items: [],
+                    totalAmount: 0,
+                    totalItems: 0
+                });
+            }
+            
+            const order = ordersMap.get(orderKey);
+            order.items.push({
+                purchaseId: purchase.purchaseId,
+                sweetId: purchase.sweetId,
+                sweetName: purchase.sweetName,
+                sweetCategory: purchase.sweetCategory,
+                sweetDescription: purchase.sweetDescription,
+                sweetImageUrl: purchase.sweetImageUrl,
+                quantity: purchase.quantity,
+                priceAtPurchase: Number(purchase.priceAtPurchase),
+                currentPrice: Number(purchase.sweetPrice),
+                itemTotal: Number(purchase.priceAtPurchase) * Number(purchase.quantity)
+            });
+            
+            order.totalAmount += Number(purchase.priceAtPurchase) * Number(purchase.quantity);
+            order.totalItems += Number(purchase.quantity);
+        });
+
+        // Convert map to array and sort by date (newest first)
+        const orders = Array.from(ordersMap.values()).sort((a, b) => 
+            new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime()
+        );
+
+        // Calculate summary statistics
+        const totalOrders = orders.length;
+        const totalRevenue = orders.reduce((sum, order) => sum + order.totalAmount, 0);
+        const totalItemsSold = orders.reduce((sum, order) => sum + order.totalItems, 0);
+        const uniqueCustomers = new Set(orders.map(order => order.userId)).size;
+
+        res.status(200).json({
+            success: true,
+            data: {
+                orders,
+                summary: {
+                    totalOrders,
+                    totalRevenue,
+                    totalItemsSold,
+                    uniqueCustomers,
+                    averageOrderValue: totalOrders > 0 ? totalRevenue / totalOrders : 0
+                }
+            },
+            message: `Found ${totalOrders} orders from ${uniqueCustomers} customers`
+        });
+    } catch (error) {
+        console.error('Error fetching all user orders:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch user orders'
+        });
+    }
+}
+
+export const getUserOrderHistory = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { userId } = req.params;
+        
+        if (!userId) {
+            res.status(400).json({
+                success: false,
+                message: "User ID is required"
+            });
+            return;
+        }
+        
+        // Get user purchases with sweet details
+        const userPurchases = await db
+            .select({
+                purchaseId: purchases.id,
+                quantity: purchases.quantity,
+                priceAtPurchase: purchases.priceAtPurchase,
+                purchasedAt: purchases.purchasedAt,
+                sweetId: sweets.id,
+                sweetName: sweets.name,
+                sweetCategory: sweets.category,
+                sweetPrice: sweets.price,
+                sweetImageUrl: sweets.imageUrl,
+                sweetDescription: sweets.description
+            })
+            .from(purchases)
+            .innerJoin(sweets, eq(purchases.sweetId, sweets.id))
+            .where(eq(purchases.userId, userId))
+            .orderBy(sql`${purchases.purchasedAt} DESC`);
+
+        // Group purchases by date to create "orders"
+        const ordersMap = new Map();
+        
+        userPurchases.forEach(purchase => {
+            const orderDate = new Date(purchase.purchasedAt).toDateString();
+            
+            if (!ordersMap.has(orderDate)) {
+                ordersMap.set(orderDate, {
+                    orderDate: purchase.purchasedAt,
+                    items: [],
+                    totalAmount: 0,
+                    totalItems: 0
+                });
+            }
+            
+            const order = ordersMap.get(orderDate);
+            order.items.push({
+                purchaseId: purchase.purchaseId,
+                sweetId: purchase.sweetId,
+                sweetName: purchase.sweetName,
+                sweetCategory: purchase.sweetCategory,
+                sweetDescription: purchase.sweetDescription,
+                sweetImageUrl: purchase.sweetImageUrl,
+                quantity: purchase.quantity,
+                priceAtPurchase: Number(purchase.priceAtPurchase),
+                currentPrice: Number(purchase.sweetPrice),
+                itemTotal: Number(purchase.priceAtPurchase) * Number(purchase.quantity)
+            });
+            
+            order.totalAmount += Number(purchase.priceAtPurchase) * Number(purchase.quantity);
+            order.totalItems += Number(purchase.quantity);
+        });
+
+        // Convert map to array and sort by date (newest first)
+        const orders = Array.from(ordersMap.values()).sort((a, b) => 
+            new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime()
+        );
+
+        const totalSpent = orders.reduce((sum, order) => sum + order.totalAmount, 0);
+        const totalItems = orders.reduce((sum, order) => sum + order.totalItems, 0);
+
+        res.status(200).json({
+            success: true,
+            data: {
+                orders,
+                summary: {
+                    totalOrders: orders.length,
+                    totalItems,
+                    totalSpent,
+                    averageOrderValue: orders.length > 0 ? totalSpent / orders.length : 0
+                }
+            },
+            message: `Found ${orders.length} orders for user`
+        });
+    } catch (error) {
+        console.error('Error fetching user order history:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch user order history'
         });
     }
 }
