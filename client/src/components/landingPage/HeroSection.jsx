@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import Image from "next/image";
+import Link from "next/link";
 
 export default function HeroSection() {
   return (
@@ -42,8 +43,8 @@ export default function HeroSection() {
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.5, delay: 0.4 }}
             >
-              Explore our wide selection of candies, chocolates, and baked goods.
-              Perfect for any occasion or just a sweet treat.
+              Explore our wide selection of candies, chocolates, and baked
+              goods. Perfect for any occasion or just a sweet treat.
             </motion.p>
 
             <motion.div
@@ -52,13 +53,15 @@ export default function HeroSection() {
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.5, delay: 0.6 }}
             >
-              <motion.button
-                className="h-12 px-6 bg-primary text-white font-bold rounded-lg hover:bg-opacity-90 transition-colors hover:shadow-md"
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.99 }}
-              >
-                Browse Sweets
-              </motion.button>
+              <Link href="/login" passHref>
+                <motion.button
+                  className="h-12 px-6 bg-primary text-white font-bold rounded-lg hover:bg-opacity-90 transition-colors hover:shadow-md"
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.99 }}
+                >
+                  Browse Sweets
+                </motion.button>
+              </Link>
             </motion.div>
           </div>
         </motion.div>
