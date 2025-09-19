@@ -1,5 +1,30 @@
 ﻿# 🍭 Sweet Shop
 
+## My AI Usage
+
+### Which AI tools I used
+- Claude (via VsCode Copilot AI, powered by Claude)
+
+### How I used them
+- Code comprehension and scanning: asked the AI to map frontend `/shop` and `/shop/inventory` routes and backend APIs, identify protected endpoints, and trace add-item and orders flows.
+- Bug diagnosis and fixes: used AI to pinpoint production crashes (image handling, env/config mismatches), update Next.js image config, and guard UI for non-admin users.
+- Feature implementation: guided creation of Cloudinary-based uploads (server-side), static serving for local dev, and frontend wiring to use returned URLs.
+- Refactors and hardening: migrated ad-hoc API calls to a consolidated client (`sweetApi`), added grouped orders rendering, validated and typed Cloudinary config, and improved error handling and limits for serverless.
+- Documentation and developer experience: generated this “My AI Usage” section and suggested environment variable setups for both client and server.
+
+#### Additional context (design and process)
+- Design/landing page: I used Google Stitch for the initial UI/UX ideas and landing layout, then adapted the components in code.
+- Database and backend: I designed and implemented the database schema and backend first, then iterated on endpoints.
+- Claude AI: I used Claude to improve the structure and clarity of certain parts (e.g., endpoint shapes, validation), while keeping the final code decisions in my hands.
+- Styling and APIs: I leveraged AI for styling suggestions and API request patterns, but I maintained control of the data flow between files and modules.
+- Development order: Backend first, then frontend integration and UI enhancements.
+
+### Reflection on impact
+- Productivity: AI significantly accelerated debugging and cross-file navigation, reducing time to locate mismatched shapes and misconfigurations.
+- Code quality: suggestions improved resilience (type-safe config, better error messages, handling `data:` URLs, admin-only actions) and production readiness (Cloudinary over ephemeral disk).
+- Risks and mitigations: AI can suggest changes that assume certain envs or deploy targets; I verified lints, added runtime checks, and limited edits to safe, incremental changes. Final behavior was validated locally with smaller uploads and environment variables clearly documented for production.
+- Human oversight: I reviewed all edits, ensured they matched project patterns, and verified that UI/UX changes (e.g., admin-only controls, grouped orders) aligned with existing components and constraints.
+
 A modern full-stack e-commerce application for a sweet shop built with Next.js 15, Express.js, PostgreSQL, and Drizzle ORM.
 
 ## 📋 Table of Contents
