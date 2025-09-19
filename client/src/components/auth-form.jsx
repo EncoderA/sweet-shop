@@ -149,6 +149,37 @@ export function AuthForm({ className, mode = "login", ...props }) {
                     </p>
                   </div>
 
+                  {/* Quick login presets */}
+                  <div className="grid gap-2">
+                    <div className="text-xs text-gray-500">Quick login</div>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="text-xs"
+                        onClick={() => setFormData(prev => ({
+                          ...prev,
+                          email: "ankush@gmail.com",
+                          password: "Ankush@123"
+                        }))}
+                      >
+                        Use Admin
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="text-xs"
+                        onClick={() => setFormData(prev => ({
+                          ...prev,
+                          email: "test@gmail.com",
+                          password: "Test@123"
+                        }))}
+                      >
+                        Use User
+                      </Button>
+                    </div>
+                  </div>
+
                   <div className="grid gap-3">
                     <Label htmlFor="email">Email</Label>
                     <Input
