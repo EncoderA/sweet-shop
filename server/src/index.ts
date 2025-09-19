@@ -8,10 +8,10 @@ import uploadRoutes from './routes/uploadRoutes';
 
 const app = express();
 
-// Configure CORS for production
+// Configure CORS
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://sweet-shop-incubyte.vercel.app', 'https://sweet-shop-backend-eight.vercel.app']
+    ? ['https://sweet-shop-incubyte.vercel.app'] // ✅ Only frontend domain
     : ['http://localhost:3000', 'http://localhost:3001'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -19,6 +19,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); // ✅ handle preflight properly
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
