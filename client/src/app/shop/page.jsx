@@ -154,18 +154,6 @@ const ShopPage = () => {
     }
   });
 
-  // Show loading if session is still loading
-//   if (status === "loading") {
-//     return (
-//       <div className="min-h-screen bg-background flex items-center justify-center">
-//         <div className="flex items-center gap-2">
-//           <Loader2 className="animate-spin" size={24} />
-//           <span>Loading...</span>
-//         </div>
-//       </div>
-//     );
-//   }
-
   return (
     <div className="min-h-full` bg-background">
       <div className="container mx-auto px-4 py-6">

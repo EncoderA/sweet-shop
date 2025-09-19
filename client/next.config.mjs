@@ -11,6 +11,10 @@ const nextConfig = {
         hostname: "sweet-shop-incubyte.vercel.app"
       },
       {
+        protocol: "https",
+        hostname: "sweet-shop-backend-eight.vercel.app"
+      },
+      {
         protocol: "http", 
         hostname: "localhost",
         port: "3001",

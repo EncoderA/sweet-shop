@@ -64,10 +64,15 @@ const InventoryPage = () => {
     };
 
     fetchSweets();
-  }, [session, status]);
+  }, [status]);
 
   const getImageUrl = (imageUrl) => {
     if (!imageUrl) return "/placeholder-sweet.jpg";
+
+    // Support data URLs returned by upload API without rewriting
+    if (imageUrl.startsWith("data:")) {
+      return imageUrl;
+    }
 
     if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
       return imageUrl;
@@ -191,13 +196,15 @@ const InventoryPage = () => {
           <h1 className="text-3xl font-bold">Inventory Management</h1>
           <p className="text-gray-600 mt-1">Total items: {sweets.length}</p>
         </div>
-        <Button
-          className="flex items-center gap-2"
-          onClick={() => setAddItemModalOpen(true)}
-        >
-          <Plus size={16} />
-          Add New Item
-        </Button>
+        {session?.user?.role === "admin" && (
+          <Button
+            className="flex items-center gap-2"
+            onClick={() => setAddItemModalOpen(true)}
+          >
+            <Plus size={16} />
+            Add New Item
+          </Button>
+        )}
       </div>
 
       {sweets.length === 0 ? (
@@ -207,10 +214,12 @@ const InventoryPage = () => {
           <p className="text-gray-600 mb-4">
             Start by adding your first sweet item.
           </p>
-          <Button className="flex items-center gap-2">
-            <Plus size={16} />
-            Add First Item
-          </Button>
+          {session?.user?.role === "admin" && (
+            <Button className="flex items-center gap-2" onClick={() => setAddItemModalOpen(true)}>
+              <Plus size={16} />
+              Add First Item
+            </Button>
+          )}
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
