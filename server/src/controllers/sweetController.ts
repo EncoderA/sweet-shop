@@ -7,7 +7,6 @@ export const createSweet = async (req: Request, res: Response): Promise<void> =>
   try {
     const { name, description, category, price, quantity, imageUrl, createdBy } = req.body
 
-    // Extra: Check if sweet already exists before insert
     const existing = await db.query.sweets.findFirst({
       where: (sweet, { eq }) => eq(sweet.name, name.trim())
     })
@@ -595,7 +594,8 @@ export const getAllUserOrders = async (req: Request, res: Response): Promise<voi
         const ordersMap = new Map();
         
         allUserPurchases.forEach(purchase => {
-            const orderDate = new Date(purchase.purchasedAt).toDateString();
+            const orderDate = new Date(purchase.purchasedAt ?? new Date()).toDateString();
+
             const orderKey = `${purchase.userId}-${orderDate}`;
             
             if (!ordersMap.has(orderKey)) {
@@ -694,7 +694,8 @@ export const getUserOrderHistory = async (req: Request, res: Response): Promise<
         const ordersMap = new Map();
         
         userPurchases.forEach(purchase => {
-            const orderDate = new Date(purchase.purchasedAt).toDateString();
+            const orderDate = new Date(purchase.purchasedAt ?? new Date()).toDateString();
+
             
             if (!ordersMap.has(orderDate)) {
                 ordersMap.set(orderDate, {
