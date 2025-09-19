@@ -23,7 +23,7 @@ const upload = multer({
     storage: storage,
     fileFilter: fileFilter,
     limits: {
-        fileSize: 5 * 1024 * 1024, // 5MB limit
+        fileSize: 4 * 1024 * 1024, // 4MB to fit Vercel serverless body limits
     }
 });
 
@@ -75,7 +75,10 @@ export const uploadImage = async (req: Request, res: Response) => {
                     unique_filename: true
                 },
                 (error, result) => {
-                    if (error) return reject(error);
+                    if (error) {
+                        console.error('Cloudinary upload error:', error);
+                        return reject(error);
+                    }
                     resolve(result);
                 }
             );
