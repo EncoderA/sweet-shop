@@ -30,6 +30,23 @@ const upload = multer({
 // Single image upload middleware
 export const uploadSingle = upload.single('image');
 
+function configureCloudinaryOrThrow(): void {
+    const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+    const apiKey = process.env.CLOUDINARY_API_KEY;
+    const apiSecret = process.env.CLOUDINARY_API_SECRET;
+
+    if (!cloudName || !apiKey || !apiSecret) {
+        throw new Error('Cloudinary configuration missing. Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET');
+    }
+
+    cloudinary.config({
+        cloud_name: cloudName,
+        api_key: apiKey,
+        api_secret: apiSecret,
+        secure: true
+    });
+}
+
 // Upload controller - stores image data in memory for now
 // TODO: Replace with cloud storage like Vercel Blob, AWS S3, or Cloudinary
 export const uploadImage = async (req: Request, res: Response) => {
@@ -42,13 +59,8 @@ export const uploadImage = async (req: Request, res: Response) => {
             return;
         }
 
-        // Configure Cloudinary from env
-        cloudinary.config({
-            cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-            api_key: process.env.CLOUDINARY_API_KEY,
-            api_secret: process.env.CLOUDINARY_API_SECRET,
-            secure: true
-        });
+        // Configure Cloudinary from env (validated)
+        configureCloudinaryOrThrow();
 
         const file = req.file as Express.Multer.File;
         const buffer = file.buffer;
@@ -106,13 +118,8 @@ export const uploadMultipleImages = async (req: Request, res: Response) => {
             return;
         }
 
-        // Configure Cloudinary from env
-        cloudinary.config({
-            cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-            api_key: process.env.CLOUDINARY_API_KEY,
-            api_secret: process.env.CLOUDINARY_API_SECRET,
-            secure: true
-        });
+        // Configure Cloudinary from env (validated)
+        configureCloudinaryOrThrow();
 
         const files = req.files as Express.Multer.File[];
         const uploadedFiles = await Promise.all(files.map(file => new Promise((resolve, reject) => {
