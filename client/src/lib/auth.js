@@ -60,9 +60,9 @@ export const authOptions = {
       if (url === baseUrl || url === `${baseUrl}/` || url === `${baseUrl}/login`) {
         return `${baseUrl}/shop`
       }
-      if (url.startsWith(baseUrl)) {
-        return url
-      }
+      // if (url.startsWith(baseUrl)) {
+      //   return url
+      // }
       return `${baseUrl}/shop`
     },
   },

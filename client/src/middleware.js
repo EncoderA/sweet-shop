@@ -54,3 +54,5 @@ export const config = {
     "/register"
   ]
 }
+
+
