@@ -85,7 +85,7 @@ export default function Header() {
       </div>
 
       {/* Mobile Menu Button */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 md:hidden">
         <AnimatedThemeToggler className={"md:hidden"} />
         <button
           className="md:hidden text-foreground"
