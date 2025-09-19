@@ -75,7 +75,7 @@ export function AuthForm({ className, mode = "login", ...props }) {
         toast.success("Login successful!", {
           description: "Welcome back to Sweet Delights"
         });
-        router.push("/");
+        router.push("/shop");
       }
     } catch (error) {
       toast.error("Login failed", {
